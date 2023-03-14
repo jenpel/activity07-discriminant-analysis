@@ -5,4 +5,58 @@ output: github_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidymodels)
 ```
+
+## Task 3
+
+```{r load data}
+resume <- readr::read_csv("https://www.openintro.org/data/csv/resume.csv")
+```
+## Question 1: The plot on the right satisfies the assumption. The plot on the left is skewed right while the plot on the right is a normal distribution. 
+
+## Task 4
+
+```{r}
+# Convert received_callback to a factor with more informative labels
+resume <- resume %>% 
+  mutate(received_callback = factor(received_callback, labels = c("No", "Yes")))
+
+# LDA
+library(discrim)
+lda_years <- discrim_linear() %>% 
+  set_mode("classification") %>% 
+  set_engine("MASS") %>% 
+  fit(received_callback ~ log(years_experience), data = resume)
+
+lda_years
+```
+## Question 2
+The values for Group Means for yes and no are pretty similar.
+
+
+## Question 3
+The peaks for received_callback yes and no are at the locations for the group means of yes and no. 
+
+
+## Task 5
+
+```{r generating predictions}
+predict(lda_years, new_data = resume, type = "prob")
+```
+
+```{r creating confusion matrix}
+augment(lda_years, new_data = resume) %>% 
+  conf_mat(truth = received_callback, estimate = .pred_class)
+
+```
+
+## Question 4
+The model never predicted yes. I think it happened because it is very uncommon to receive a callback so it did not predict it. 
+
+```{r}
+augment(lda_years, new_data = resume) %>% 
+  accuracy(truth = received_callback, estimate = .pred_class)
+```
+
